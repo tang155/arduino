@@ -1,1 +1,2 @@
-安装库的详细信息，请参阅：http://www.arduino.cc/en/Guide/Libraries
+﻿安装库的详细信息，请参阅：http://www.arduino.cc/en/Guide/Libraries
+1
