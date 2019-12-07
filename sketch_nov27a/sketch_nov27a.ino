@@ -45,6 +45,8 @@ void init_wifi(const char *ssid, const char *password)
  
 void mqtt_callback(char *topic, byte *payload, unsigned int length)
 {
+      char param[512];
+    char jsonBuf[1024];
     Serial.print("Message arrived [");
     Serial.print(topic);
     Serial.print("] ");
@@ -55,12 +57,22 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length)
     { 
        digitalWrite(LED_BUILTIN, LOW);   // Turn the LED on (Note that LOW is the voltage level  // but actually the LED is on; this is because
     // it is active low on the ESP-01)
+              sprintf(param, "{\"LightSwitch\":1}");
+              sprintf(jsonBuf, ALINK_BODY_FORMAT, ALINK_METHOD_PROP_POST, param); //增加LED灯的状态反馈
+              Serial.println(jsonBuf);
+              mqttClient.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
     }
     else if(strstr((char *)payload,"LightSwitch\":0")) 
     {  
        digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
+              sprintf(param, "{\"LightSwitch\":0}");
+              sprintf(jsonBuf, ALINK_BODY_FORMAT, ALINK_METHOD_PROP_POST, param); //增加LED灯的状态反馈
+              Serial.println(jsonBuf);
+              mqttClient.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
     }
-    if (strstr(topic, ALINK_TOPIC_PROP_SET))
+
+//    Serial.println((char *)payload);
+    if (strstr(topic, ALINK_TOPIC_PROP_SET))//判断当前字段是否是属性设置内容
     {
         StaticJsonBuffer<100> jsonBuffer;
         JsonObject &root = jsonBuffer.parseObject(payload);
