@@ -7,12 +7,12 @@
 // GPIO 13, D7 on the Node MCU v3
 #define SENSOR_PIN 13
  
-#define WIFI_SSID        "Honor99"//替换自己的WIFI
-#define WIFI_PASSWD      "12345678"//替换自己的WIFI
+#define WIFI_SSID        "5G_TEST"//替换自己的WIFI
+#define WIFI_PASSWD      "15980847344"//替换自己的WIFI
  
 #define PRODUCT_KEY      "a18gLLRjBlh" //替换自己的PRODUCT_KEY
-#define DEVICE_NAME      "BK7orLCxF4u82QoinUdi" //替换自己的DEVICE_NAME
-#define DEVICE_SECRET    "SYwp0VyQWLsfshC1SYw3lxeE93LQE0hj"//替换自己的DEVICE_SECRET
+#define DEVICE_NAME      "test1" //替换自己的DEVICE_NAME
+#define DEVICE_SECRET    "Noi0LyYFQoeucaQ56yFpVlbzrUhVgbMC"//替换自己的DEVICE_SECRET
  
 #define DEV_VERSION       "S-TH-WIFI-v1.0-20190220"        //固件版本信息
  
@@ -28,9 +28,10 @@ unsigned long lastMs = 0;
 WiFiClient   espClient;
 PubSubClient mqttClient(espClient);
 uint8 data_of_bt_rf[32]; 
+
 uint8 * serial_data_of_bt_rf_command_excute( uint8 function_code, uint8 value_code)//生成AXENT COM32字节数据
 {
-  uint8 custom_code = 0X30;
+  uint8 custom_code = 0X20;
     data_of_bt_rf[0] = 0X02;
     data_of_bt_rf[1] = 0X0A;
     data_of_bt_rf[2] = custom_code;
@@ -89,6 +90,8 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length)
 {
       char param[512];
     char jsonBuf[1024];
+    unsigned char temp=0;
+    char *p;
 //    Serial.print("Message arrived [");//显示接收到云端的下发数据
 //    Serial.print(topic);
 //    Serial.print("] ");
@@ -104,13 +107,100 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length)
               Serial.println(jsonBuf);
               mqttClient.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
     }
+    else if(strstr((char *)payload,"LightSwitch\":0")) 
+    {  
+       digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
+              sprintf(param, "{\"LightSwitch\":0}");
+              sprintf(jsonBuf, ALINK_BODY_FORMAT, ALINK_METHOD_PROP_POST, param); //增加LED灯的状态反馈
+              Serial.println(jsonBuf);
+              mqttClient.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
+    }
     else if(strstr((char *)payload,"Stop\":")) //停止命令
     {  
-        serial_data_of_bt_rf_command_excute(0,0);
         Serial.write(serial_data_of_bt_rf_command_excute(0,0),32);
     }
-    else if(strstr((char *)payload,"LightSwitch\":0")) 
-
+    else if(strstr((char *)payload,"RearWash\":")) //臀洗命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0x31,0x33),32);
+    }
+    else if(strstr((char *)payload,"LadyWash\":")) //妇洗命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0x32,0x33),32);
+    }    
+    else if(strstr((char *)payload,"Dry\":")) //烘干命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0x04,0x33),32);
+    }    
+    else if(strstr((char *)payload,"Nozzle\":")) //喷管位置命令
+    {  
+        p = strstr((char *)payload,"Nozzle\":");
+        temp = *(p+8)-0x30;
+        Serial.write(serial_data_of_bt_rf_command_excute(0X36,temp),32);
+    }
+    else if(strstr((char *)payload,"WaterTemp\":")) //水温命令
+    {  
+        p = strstr((char *)payload,"WaterTemp\":");
+        temp = *(p+11)-0x30;
+        Serial.write(serial_data_of_bt_rf_command_excute(0X16,temp),32);    
+    }
+    else if(strstr((char *)payload,"WaterFlow\":")) //流量调节命令
+    {  
+        p = strstr((char *)payload,"WaterFlow\":");
+        temp = *(p+11)-0x30;
+        Serial.write(serial_data_of_bt_rf_command_excute(0X46,temp),32);    
+    }
+    else if(strstr((char *)payload,"DryTemp\":")) //风温命令
+    {  
+        p = strstr((char *)payload,"DryTemp\":");
+        temp = *(p+9)-0x30;
+        Serial.write(serial_data_of_bt_rf_command_excute(0X16,temp),32);    
+    }
+    else if(strstr((char *)payload,"SeatTemp\":")) //座温命令
+    {  
+        p = strstr((char *)payload,"SeatTemp\":");
+        temp = *(p+10)-0x30;
+        Serial.write(serial_data_of_bt_rf_command_excute(0X16,temp),32);    
+    }      
+    else if(strstr((char *)payload,"LidSeatClose\":")) //上盖座圈关闭命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0x07,0x00),32);
+    }    
+    else if(strstr((char *)payload,"LidSeatOpen\":")) //上盖座圈开启命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0x07,0x02),32);
+    }
+    else if(strstr((char *)payload,"LidOpenSeatClose\":")) //上盖开座圈关命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0x07,0x01),32);
+    }
+    else if(strstr((char *)payload,"Flush\":")) //冲刷命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0X09,0x01),32);
+    }
+    else if(strstr((char *)payload,"MassageMove\":")) //移动按摩命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0X15,0x01),32);
+    }
+    else if(strstr((char *)payload,"MassagePulse\":")) //强弱按摩命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0X15,0x02),32);
+    }
+    else if(strstr((char *)payload,"MassageCycle\":")) //强弱按摩命令
+    {  
+        Serial.write(serial_data_of_bt_rf_command_excute(0X15,0x08),32);
+    }
+    else if(strstr((char *)payload,"DisplayMode\":")) //展厅模式命令
+    {  
+        p = strstr((char *)payload,"DisplayMode\":");
+        temp = *(p+13)-0x30;
+        Serial.write(serial_data_of_bt_rf_command_excute(0X3B,temp),32);        }
+    else//不能处理的云端数据直接打印出来
+    {
+        Serial.print("Message arrived [");//显示接收到云端的下发数据
+        Serial.print(topic);
+        Serial.print("] ");
+        Serial.println((char *)payload);
+    }
 
 //    Serial.println((char *)payload);
     if (strstr(topic, ALINK_TOPIC_PROP_SET))//判断当前字段是否是属性设置内容
@@ -150,6 +240,8 @@ void mqtt_check_connect()
             mqttClient.subscribe(ALINK_TOPIC_PROP_SET);
             
             Serial.println("subscribe done");
+            pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
+
 //            mqtt_version_post();
         }
     }
@@ -173,14 +265,18 @@ void setup()
  
     pinMode(SENSOR_PIN, INPUT);
     /* initialize serial for debugging */
-    Serial.begin(115200);
- 
+    Serial.begin(115200);  
+    //uart_write_array(UART0,"\x0F\x0F\x0F\x0F\x08\x08\x81\x04",8);  
+    Serial.write("\x0F\x0F\x0F\x0F\x08\x08\x81\x04",8);
+    delay(20);
+    Serial.write("\x0F\x0F\x0F\x0F\x08\x08\x81\x04",8);
+
     Serial.println("Demo Start");
  
     init_wifi(WIFI_SSID, WIFI_PASSWD);
  
     mqttClient.setCallback(mqtt_callback);
-     pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
+//     pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   Serial.setTimeout(1000);//串口接收20ms
 }
  
