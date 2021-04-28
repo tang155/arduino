@@ -272,7 +272,7 @@ void setup()
     Serial.write("\x0F\x0F\x0F\x0F\x08\x08\x81\x04",8);
 
     Serial.println("Demo Start");
- 
+//    awss_start();
     init_wifi(WIFI_SSID, WIFI_PASSWD);
  
     mqttClient.setCallback(mqtt_callback);
